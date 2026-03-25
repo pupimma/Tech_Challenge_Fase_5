@@ -2,4 +2,3 @@ streamlit
 pandas
 scikit-learn
 joblib
-# Adicione outras que utilizar, como xgboost ou matplotlib
