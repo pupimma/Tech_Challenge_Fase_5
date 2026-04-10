@@ -89,11 +89,16 @@ except Exception as e:
     st.stop()
 
 # ----------------------------------------------------------------------
-# 4. MENU LATERAL E FILTROS DINÂMICOS (VERSÃO BLINDADA)
+# 4. MENU LATERAL E FILTROS DINÂMICOS (VERSÃO FINAL BLINDADA)
 # ----------------------------------------------------------------------
 with st.sidebar:
     st.header("⚙️ Filtros Interativos")
     
+    # Criamos listas padrão para evitar erros de "não definido"
+    fases_selecionadas = []
+    generos_selecionados = []
+    pedras_selecionadas = []
+
     # 1. Filtro de Fase
     fases_lista = df_master['Fase'].dropna().unique().tolist()
     fases_disponiveis = sorted([str(f) for f in fases_lista])
@@ -116,7 +121,8 @@ with st.sidebar:
     st.divider()
     st.info("Painel Analítico - Datathon Fase 5")
 
-# --- LÓGICA DE FILTRAGEM (CRUCIAL: CRIA A VARIÁVEL PARA AS ABAS) ---
+# --- LÓGICA DE FILTRAGEM GLOBAL (PRECISA ESTAR FORA DO SIDEBAR) ---
+# Aqui criamos a variável df_filtrado que a Aba 5 e 6 tanto pedem
 df_filtrado = df_master.copy()
 
 if fases_selecionadas:
@@ -129,13 +135,13 @@ if pedras_selecionadas:
     df_filtrado = df_filtrado[df_filtrado['Pedra'].isin(pedras_selecionadas)]
 
 # ----------------------------------------------------------------------
-# 5. CONSTRUÇÃO DO VISUAL DA PÁGINA
+# 5. CONSTRUÇÃO DAS ABAS
 # ----------------------------------------------------------------------
 st.title("📊 Análise Datathon - ONG Passos Mágicos")
 st.markdown("Plataforma de visualização e predição de risco educacional.")
 st.divider()
 
-# A LINHA MÁGICA: Esta linha TEM que vir antes de todos os "with aba..."
+# Criamos as 6 gavetas. Agora o Python sabe que aba5 e aba6 existem!
 aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "📝 Bases Originais", 
     "⚙️ Engenharia", 
@@ -144,8 +150,6 @@ aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "🤖 Inteligência Artificial",
     "💡 Insights e Conclusões"
 ])
-
-# Agora sim, preenchemos as gavetas na ordem:
 
 with aba1:
     st.markdown("### Visualização dos dados brutos")
