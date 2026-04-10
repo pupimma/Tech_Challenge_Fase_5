@@ -70,15 +70,26 @@ except Exception as e:
 with st.sidebar:
     st.header("⚙️ Filtros de Análise")
     
-    fases_disponiveis = sorted(df_master['Fase'].unique().tolist())
+    # Filtro de Fase
+    fases_lista = df_master['Fase'].unique().tolist()
+    fases_disponiveis = sorted([str(f) for f in fases_lista if pd.notna(f)])
     fases_sel = st.multiselect("Fase da ONG:", options=fases_disponiveis)
     
     df_f = df_master[df_master['Fase'].isin(fases_sel)] if fases_sel else df_master
     
-    generos_sel = st.multiselect("Gênero:", options=sorted(df_f['Gênero'].unique().tolist()))
+    # Filtro de Gênero
+    generos_lista = df_f['Gênero'].unique().tolist()
+    generos_disponiveis = sorted([str(g) for g in generos_lista if pd.notna(g)])
+    generos_sel = st.multiselect("Gênero Aluno:", options=generos_disponiveis)
+    
     df_f = df_f[df_f['Gênero'].isin(generos_sel)] if generos_sel else df_f
     
-    pedras_sel = st.multiselect("Classificação (Pedra):", options=sorted(df_f['Pedra'].unique().tolist()))
+    # Filtro de Pedra (Onde deu o erro no seu print)
+    pedras_lista = df_f['Pedra'].unique().tolist()
+    # Forçamos a conversão para string e removemos nulos antes do sorted
+    pedras_disponiveis = sorted([str(p) for p in pedras_lista if pd.notna(p)])
+    pedras_sel = st.multiselect("Classificação (Pedra):", options=pedras_disponiveis)
+    
     df_filtrado = df_f[df_f['Pedra'].isin(pedras_sel)] if pedras_sel else df_f
 
     st.divider()
