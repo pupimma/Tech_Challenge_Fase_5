@@ -4,6 +4,7 @@ import plotly.express as px
 import time
 import joblib
 import numpy as np
+import os
 
 # ----------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -19,8 +20,26 @@ st.set_page_config(
 # ----------------------------------------------------------------------
 @st.cache_data
 def carregar_dados():
-    caminho_arquivo = r'C:\Users\mauro.pupim\OneDrive - CantuStore\Documentos\Cursos\FIAP\Tech Challenge - Fase 5\data\BASE DE DADOS PEDE 2024 - DATATHON.xlsx'
+    # 1. Pega o caminho absoluto de onde este arquivo app.py está
+    caminho_script = os.path.abspath(__file__)
     
+    # 2. Sobe os níveis necessários até achar a pasta raiz do projeto (Fase 5)
+    # Se o app.py estiver dentro de 'models', precisamos subir 1 nível (dirname do dirname)
+    # Se estiver na raiz, subiria apenas 1. Vamos garantir que ele ache a 'data'
+    raiz_projeto = os.path.dirname(os.path.dirname(caminho_script))
+    
+    # 3. Tenta montar o caminho na raiz. Se não achar, tenta na pasta atual.
+    caminho_arquivo = os.path.join(raiz_projeto, 'data', 'BASE DE DADOS PEDE 2024 - DATATHON.xlsx')
+    
+    # Backup: se você moveu a pasta data para dentro de models por engano
+    if not os.path.exists(caminho_arquivo):
+        diretorio_atual = os.path.dirname(caminho_script)
+        caminho_arquivo = os.path.join(diretorio_atual, 'data', 'BASE DE DADOS PEDE 2024 - DATATHON.xlsx')
+
+    if not os.path.exists(caminho_arquivo):
+        st.error(f"❌ Arquivo NÃO encontrado! Verifique se a pasta 'data' está no local correto.\nTentamos em: {caminho_arquivo}")
+        st.stop()
+        
     df_22 = pd.read_excel(caminho_arquivo, sheet_name='PEDE2022')
     df_23 = pd.read_excel(caminho_arquivo, sheet_name='PEDE2023')
     df_24 = pd.read_excel(caminho_arquivo, sheet_name='PEDE2024')
