@@ -6,6 +6,8 @@ import joblib
 import numpy as np
 import os
 
+st.set_page_config(page_title="Tech Challenge - Fase 5", layout="wide")
+
 # ----------------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA
 # ----------------------------------------------------------------------
@@ -57,7 +59,7 @@ def normalizar_e_consolidar(df_22, df_23, df_24):
     df_24_padrao = df_24.rename(columns={'Data de Nasc': 'Data_Nascimento', 'INDE 2024': 'INDE', 'Pedra 2024': 'Pedra'}).copy()
     df_24_padrao['Ano_Referencia'] = 2024
 
-    colunas_finais = ['Ano_Referencia', 'RA', 'Nome_Anonimizado', 'Fase', 'Turma', 'Data_Nascimento', 'Idade', 'Gênero', 'Instituição de ensino', 'INDE', 'Pedra']
+    colunas_finais = ['Ano_Referencia', 'RA', 'Nome_Anonimizado', 'Fase', 'Turma', 'Data_Nascimento', 'Idade', 'Gênero', 'Instituição de ensino', 'INDE', 'Pedra', 'IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
 
     df_22_final = df_22_padrao[[col for col in colunas_finais if col in df_22_padrao.columns]]
     df_23_final = df_23_padrao[[col for col in colunas_finais if col in df_23_padrao.columns]]
@@ -87,31 +89,44 @@ except Exception as e:
     st.stop()
 
 # ----------------------------------------------------------------------
-# 4. MENU LATERAL E FILTROS DINÂMICOS
+# 4. MENU LATERAL E FILTROS DINÂMICOS (VERSÃO BLINDADA)
 # ----------------------------------------------------------------------
 with st.sidebar:
     st.header("⚙️ Filtros Interativos")
     
-    fases_disponiveis = sorted(df_master['Fase'].unique().tolist())
+    # 1. Filtro de Fase
+    fases_lista = df_master['Fase'].dropna().unique().tolist()
+    fases_disponiveis = sorted([str(f) for f in fases_lista])
     fases_selecionadas = st.multiselect("Fase da ONG:", options=fases_disponiveis, default=[], placeholder="Escolha as fases...")
     
     df_temp1 = df_master[df_master['Fase'].isin(fases_selecionadas)] if fases_selecionadas else df_master
     
-    generos_disponiveis = sorted(df_temp1['Gênero'].unique().tolist())
+    # 2. Filtro de Gênero
+    generos_lista = df_temp1['Gênero'].dropna().unique().tolist()
+    generos_disponiveis = sorted([str(g) for g in generos_lista])
     generos_selecionados = st.multiselect("Gênero do Aluno:", options=generos_disponiveis, default=[], placeholder="Escolha o gênero...")
     
     df_temp2 = df_temp1[df_temp1['Gênero'].isin(generos_selecionados)] if generos_selecionados else df_temp1
     
-    pedras_disponiveis = sorted(df_temp2['Pedra'].unique().tolist())
+    # 3. Filtro de Pedra
+    pedras_lista = df_temp2['Pedra'].dropna().unique().tolist()
+    pedras_disponiveis = sorted([str(p) for p in pedras_lista])
     pedras_selecionadas = st.multiselect("Classificação (Pedra):", options=pedras_disponiveis, default=[], placeholder="Escolha as pedras...")
     
     st.divider()
     st.info("Painel Analítico - Datathon Fase 5")
 
+# --- LÓGICA DE FILTRAGEM (CRUCIAL: CRIA A VARIÁVEL PARA AS ABAS) ---
 df_filtrado = df_master.copy()
-if fases_selecionadas: df_filtrado = df_filtrado[df_filtrado['Fase'].isin(fases_selecionadas)]
-if generos_selecionados: df_filtrado = df_filtrado[df_filtrado['Gênero'].isin(generos_selecionados)]
-if pedras_selecionadas: df_filtrado = df_filtrado[df_filtrado['Pedra'].isin(pedras_selecionadas)]
+
+if fases_selecionadas:
+    df_filtrado = df_filtrado[df_filtrado['Fase'].isin(fases_selecionadas)]
+
+if generos_selecionados:
+    df_filtrado = df_filtrado[df_filtrado['Gênero'].isin(generos_selecionados)]
+
+if pedras_selecionadas:
+    df_filtrado = df_filtrado[df_filtrado['Pedra'].isin(pedras_selecionadas)]
 
 # ----------------------------------------------------------------------
 # 5. CONSTRUÇÃO DO VISUAL DA PÁGINA
@@ -120,13 +135,17 @@ st.title("📊 Análise Datathon - ONG Passos Mágicos")
 st.markdown("Plataforma de visualização e predição de risco educacional.")
 st.divider()
 
-aba1, aba2, aba3, aba4, aba5 = st.tabs([
+# A LINHA MÁGICA: Esta linha TEM que vir antes de todos os "with aba..."
+aba1, aba2, aba3, aba4, aba5, aba6 = st.tabs([
     "📝 Bases Originais", 
     "⚙️ Engenharia", 
     "✅ Base Consolidada", 
     "📈 Dashboard",
-    "🤖 Inteligência Artificial"
+    "🤖 Inteligência Artificial",
+    "💡 Insights e Conclusões"
 ])
+
+# Agora sim, preenchemos as gavetas na ordem:
 
 with aba1:
     st.markdown("### Visualização dos dados brutos")
@@ -147,21 +166,16 @@ with aba3:
     st.markdown("### ✅ Base Consolidada")
     st.write(f"**Registros encontrados com os filtros atuais:** {len(df_filtrado)} linhas.")
     st.dataframe(df_filtrado, use_container_width=True)
-    
-    csv = df_filtrado.to_csv(index=False, sep=';', decimal=',').encode('utf-8')
-    st.download_button("📥 Baixar Dados Filtrados (CSV)", data=csv, file_name='passos_magicos_filtrado.csv', mime='text/csv')
 
 with aba4:
     st.markdown("### 📈 Indicadores de Desempenho")
     col_graf1, col_graf2 = st.columns(2)
-
     with col_graf1:
         st.subheader("Evolução do INDE Médio")
         df_inde_medio = df_filtrado.groupby('Ano_Referencia')['INDE'].mean().reset_index()
         fig_inde = px.line(df_inde_medio, x='Ano_Referencia', y='INDE', markers=True)
         fig_inde.update_xaxes(type='category', title="Ano de Referência")
         st.plotly_chart(fig_inde, use_container_width=True)
-
     with col_graf2:
         st.subheader("Distribuição por Pedra")
         df_pedras = df_filtrado.groupby(['Ano_Referencia', 'Pedra']).size().reset_index(name='Quantidade')
@@ -169,65 +183,107 @@ with aba4:
         fig_pedras.update_xaxes(type='category', title="Ano de Referência")
         st.plotly_chart(fig_pedras, use_container_width=True)
 
-# ----------------------------------------------------------------------
-# 6. ABA DE INTELIGÊNCIA ARTIFICIAL (INFERÊNCIA)
-# ----------------------------------------------------------------------
 with aba5:
     st.markdown("### 🤖 Previsão de Risco de Defasagem (Machine Learning)")
-    st.write("Insira os indicadores do aluno para que o modelo preditivo calcule a probabilidade de queda de rendimento.")
     
     def carregar_modelo():
+        caminho_modelo = 'modelo_passos_magicos.pkl'
+        if not os.path.exists(caminho_modelo):
+            diretorio_script = os.path.dirname(os.path.abspath(__file__))
+            caminho_modelo = os.path.join(diretorio_script, 'modelo_passos_magicos.pkl')
         try:
-            return joblib.load('modelo_passos_magicos.pkl')
+            return joblib.load(caminho_modelo)
         except:
             return None
-            
+
     modelo = carregar_modelo()
-    
     if modelo is None:
-        st.error("⚠️ Arquivo 'modelo_passos_magicos.pkl' não encontrado. Certifique-se de que ele está na mesma pasta que o app.py.")
+        st.error("❌ Arquivo 'modelo_passos_magicos.pkl' não encontrado.")
     else:
-        with st.form("form_ml"):
-            st.subheader("Indicadores do Aluno")
-            col_ml1, col_ml2, col_ml3 = st.columns(3)
+        col_ia1, col_ia2, col_ia3 = st.columns(3)
+        with col_ia1:
+            fase_input = st.selectbox("Fase do Aluno", options=fases_disponiveis if 'fases_disponiveis' in locals() else ["Fase 1"])
+            ida_input = st.slider("Desempenho (IDA)", 0.0, 10.0, 5.0)
+            ieg_input = st.slider("Engajamento (IEG)", 0.0, 10.0, 5.0)
+        with col_ia2:
+            ian_input = st.slider("Nível (IAN)", 0.0, 10.0, 5.0)
+            ips_input = st.slider("Psicossocial (IPS)", 0.0, 10.0, 5.0)
+            ipp_input = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 5.0)
+        with col_ia3:
+            iaa_input = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 5.0)
 
-            with col_ml1:
-                opcoes_fase = fases_selecionadas if fases_selecionadas else ["Fase 1", "Fase 2", "Fase 3", "Fase 4", "Fase 5", "Fase 6", "Fase 7", "Fase 8"]
-                fase_input = st.selectbox("Fase do Aluno na ONG", opcoes_fase)
-                ida_input = st.slider("Desempenho Acadêmico (IDA)", 0.0, 10.0, 5.0)
-                ieg_input = st.slider("Engajamento nas Atividades (IEG)", 0.0, 10.0, 5.0)
+        if st.button("Gerar Análise Preditiva"):
+            dados_entrada = pd.DataFrame([[ian_input, ida_input, ieg_input, iaa_input, ips_input, ipp_input]], 
+                                         columns=['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP'])
+            probabilidade = modelo.predict_proba(dados_entrada)[0][1]
+            risco = probabilidade * 100 
+            st.divider()
+            if risco >= 60: st.error(f"🚨 ALTO RISCO: {risco:.1f}%")
+            elif risco >= 30: st.warning(f"⚠️ RISCO MODERADO: {risco:.1f}%")
+            else: st.success(f"✅ BAIXO RISCO: {risco:.1f}%")
 
-            with col_ml2:
-                ian_input = st.slider("Adequação de Nível (IAN)", 0.0, 10.0, 5.0)
-                ips_input = st.slider("Aspecto Psicossocial (IPS)", 0.0, 10.0, 5.0)
-                ipp_input = st.slider("Aspecto Psicopedagógico (IPP)", 0.0, 10.0, 5.0)
+with aba6:
+    st.markdown("### 💡 Insights Estratégicos")
+    col_ins1, col_ins2 = st.columns(2)
+    with col_ins1:
+        st.info("#### 📈 Evolução do INDE")
+        df_22 = df_master[df_master['Ano_Referencia'] == 2022]
+        df_24 = df_master[df_master['Ano_Referencia'] == 2024]
+        if not df_22.empty and not df_24.empty:
+            inde_22, inde_24 = df_22['INDE'].mean(), df_24['INDE'].mean()
+            delta = ((inde_24 - inde_22) / inde_22) * 100
+            st.metric("Crescimento (2022-2024)", f"{inde_24:.2f}", f"{delta:.1f}%")
+    with col_ins2:
+        st.warning("#### ⚠️ Pontos de Atenção")
+        existentes = [c for c in ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP'] if c in df_master.columns]
+        if existentes:
+            df_2024_medias = df_master[df_master['Ano_Referencia'] == 2024][existentes].mean()
+            st.write(f"Menor desempenho em 2024: **{df_2024_medias.idxmin()}**")
 
-            with col_ml3:
-                iaa_input = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 5.0)
-                inde_input = st.slider("Índice de Desenvolvimento (INDE)", 0.0, 10.0, 5.0)
+# ----------------------------------------------------------------------
+# ABA 6: INSIGHTS E CONCLUSÕES (VERSÃO SEGURA)
+# ----------------------------------------------------------------------
+with aba6:
+    st.markdown("### 💡 Insights Estratégicos")
+    
+    col_ins1, col_ins2 = st.columns(2)
+    
+    with col_ins1:
+        st.info("#### 📈 Evolução do INDE")
+        # Calculamos as médias garantindo que temos dados
+        df_22 = df_master[df_master['Ano_Referencia'] == 2022]
+        df_24 = df_master[df_master['Ano_Referencia'] == 2024]
+        
+        if not df_22.empty and not df_24.empty:
+            inde_2022 = df_22['INDE'].mean()
+            inde_2024 = df_24['INDE'].mean()
+            delta = ((inde_2024 - inde_2022) / inde_2022) * 100 if inde_2022 != 0 else 0
+            
+            st.metric("Crescimento do Índice Geral (2022-2024)", 
+                      f"{inde_2024:.2f}", 
+                      f"{delta:.1f}% em relação a 2022")
+        else:
+            st.write("Dados insuficientes para calcular a evolução temporal.")
 
-            submit_button = st.form_submit_button("Gerar Análise Preditiva", use_container_width=True)
+    with col_ins2:
+        st.warning("#### ⚠️ Pontos de Atenção")
+        indicadores_alvo = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
+        # Filtramos apenas as colunas que realmente chegaram no df_master
+        existentes = [c for c in indicadores_alvo if c in df_master.columns]
+        
+        if existentes:
+            df_2024_medias = df_master[df_master['Ano_Referencia'] == 2024][existentes].mean()
+            if not df_2024_medias.empty:
+                pior_indicador = df_2024_medias.idxmin()
+                valor_pior = df_2024_medias.min()
+                st.write(f"O indicador com menor desempenho médio em 2024 é o **{pior_indicador}** (Nota: {valor_pior:.2f}).")
+                st.write("📌 **Recomendação:** Focar o plano de ação pedagógico neste pilar.")
+        else:
+            st.write("Sub-indicadores não encontrados na base consolidada.")
 
-if submit_button:
-            with st.spinner('Processando dados na Random Forest...'):
-                time.sleep(1) 
-                
-                # CORREÇÃO AQUI: Passamos APENAS as 6 colunas que o modelo conhece (Sem o INDE)
-                dados_entrada = pd.DataFrame([[ian_input, ida_input, ieg_input, iaa_input, ips_input, ipp_input]], 
-                                             columns=['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP'])
-                
-                probabilidade = modelo.predict_proba(dados_entrada)[0][1]
-                risco = probabilidade * 100 
-
-                st.markdown("---")
-                st.subheader("Resultado do Modelo Random Forest")
-
-                if risco >= 60:
-                    st.error(f"🚨 **ALTO RISCO DETECTADO!** Probabilidade de defasagem: **{risco:.1f}%**")
-                    st.write("**Ação sugerida:** O perfil validado pelo histórico da ONG indica um forte padrão de queda. O aluno necessita de intervenção imediata.")
-                elif risco >= 30:
-                    st.warning(f"⚠️ **RISCO MODERADO.** Probabilidade de defasagem: **{risco:.1f}%**")
-                    st.write("**Ação sugerida:** Sinais de alerta. Monitorar de perto o Engajamento e o aspecto Psicopedagógico nas próximas semanas.")
-                else:
-                    st.success(f"✅ **BAIXO RISCO.** Probabilidade de defasagem: **{risco:.1f}%**")
-                    st.write("**Ação sugerida:** Aluno com padrão saudável e resiliente. Manter o acompanhamento padrão na fase.")
+    st.divider()
+    st.markdown("#### 🎯 Conclusões Finais")
+    st.success("""
+    * O modelo **Random Forest** validou que a combinação de baixo engajamento (IEG) e desempenho acadêmico (IDA) são os principais gatilhos de risco.
+    * A base de dados consolidada permite identificar alunos em 'zona de silêncio' (onde as notas ainda são boas, mas o psicossocial IPS começou a cair).
+    """)
