@@ -1,7 +1,7 @@
 # Tech_Challenge_Fase_5# 📊 Datathon - ONG Passos Mágicos
 ### Tech Challenge - Fase 5 | Pós-Graduação em Data Analytics (FIAP)
 
-Este projeto apresenta um ecossistema completo de análise de dados e Inteligência Artificial para a ONG **Passos Mágicos**. A solução contempla desde a normalização de dados históricos (2022-2024) até a implementação de um modelo preditivo de Machine Learning para identificar alunos em risco de defasagem escolar.
+Este repositório apresenta um ecossistema de inteligência de dados desenvolvido para a ONG Passos Mágicos. A solução contempla desde a higienização de bases históricas (2022-2024) até a implementação de um modelo preditivo para identificação precoce de risco de defasagem escolar.
 
 ---
 
@@ -10,7 +10,20 @@ Acesse a aplicação em tempo real: [https://magicsteps.streamlit.app](https://m
 
 ---
 
+## 🏗️ Arquitetura da Solução
+
+O projeto foi estruturado para garantir portabilidade e escalabilidade, dividindo-se em três camadas:
+
+1. Data Storage: Armazenamento de bases históricas (.xlsx) na estrutura de pastas local, utilizando caminhos relativos para compatibilidade com ambientes Git e Cloud.
+
+2. ML Engine: Pipeline de ETL e treinamento desenvolvido em Python. Utiliza Random Forest Classifier para predição de risco educacional. O modelo é serializado via joblib para consumo em tempo real.
+
+3. Analytics Frontend: Dashboard interativo em Streamlit que integra a visualização de KPIs históricos e o simulador de predição de IA.
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
+
 * **Linguagem:** Python 3.10+
 * **Interface Web:** Streamlit
 * **Processamento de Dados:** Pandas / Numpy
@@ -35,11 +48,12 @@ Desenvolvemos um classificador baseado no algoritmo **Random Forest** (Florestas
 ---
 
 ## 📁 Estrutura do Repositório
-* `app.py`: Arquivo principal da aplicação Streamlit.
-* `requirements.txt`: Lista de dependências para o deploy.
-* `modelo_passos_magicos.pkl`: Modelo Random Forest treinado e serializado.
-* `data/`: Pasta contendo a base de dados original (Excel).
-* `notebooks/`: Jupyter Notebooks utilizados para o treinamento e EDA (Exploratory Data Analysis).
+
+    * app.py: Interface principal do Dashboard Streamlit.
+    * requirements.txt: Dependências do projeto para deploy.
+    * data/: Base de dados original em formato Excel.
+    * models/: Binários do modelo treinado (.pkl).
+    * notebooks/: Scripts de desenvolvimento, análise exploratória (EDA) e treinamento do modelo.
 
 ---
 
