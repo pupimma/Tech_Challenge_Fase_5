@@ -98,42 +98,43 @@ with aba_ia:
     
     if os.path.exists(path_model):
         modelo = joblib.load(path_model)
-        with st.expander("Configurar Parâmetros de Simulação", expanded=True):
+        with st.expander("Configurar Simulador", expanded=True):
             col1, col2 = st.columns(2)
             with col1:
-                st.markdown("**Valores Recentes (Safra 2023)**")
-                v23_inde = st.slider("INDE 23", 0.0, 10.0, 7.5)
-                v23_ida = st.slider("IDA 23", 0.0, 10.0, 7.0)
-                v23_ieg = st.slider("IEG 23", 0.0, 10.0, 8.0)
-                v23_iaa = st.slider("IAA 23", 0.0, 10.0, 7.5)
-                v23_ips = st.slider("IPS 23", 0.0, 10.0, 7.5)
+                v_ian = st.slider("Adequação (IAN)", 0.0, 10.0, 7.0)
+                v_ida = st.slider("Acadêmico (IDA)", 0.0, 10.0, 7.0)
+                v_ieg = st.slider("Engajamento (IEG)", 0.0, 10.0, 7.0)
             with col2:
-                st.markdown("**Métricas de Evolução**")
-                e_inde = st.number_input("Evol_INDE_22_23", -5.0, 5.0, 0.5)
-                e_ida = st.number_input("Evol_IDA_22_23", -5.0, 5.0, 0.2)
+                v_iaa = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 7.0)
+                v_ips = st.slider("Social (IPS)", 0.0, 10.0, 7.0)
+                v_ipp = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 7.0)
             
             if st.button("Executar Diagnóstico IA", use_container_width=True):
-                # ORDEM E NOMES EXATOS EXIGIDOS PELO SEU MODELO:
-                features = [
-                    'INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 
-                    'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23',
-                    'Evol_INDE_22_23', 'Evol_IDA_22_23'
-                ]
+                # TENTATIVA 1: NOMES SIMPLES (O QUE O ERRO DA WEB PEDIU)
+                features_simples = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
+                dados_simples = pd.DataFrame([[v_ian, v_ida, v_ieg, v_iaa, v_ips, v_ipp]], columns=features_simples)
                 
-                # Preenchemos 2022 com valores base e 2023/Evolução com seus inputs
-                valores = [[7.0, 7.0, 7.0, 7.0, 7.0, v23_inde, v23_ida, v23_ieg, v23_iaa, v23_ips, e_inde, e_ida]]
-                entrada = pd.DataFrame(valores, columns=features)
+                # TENTATIVA 2: NOMES DETALHADOS (CASO O MODELO LOCAL SEJA DIFERENTE)
+                features_detalhadas = ['INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23', 'Evol_INDE_22_23', 'Evol_IDA_22_23']
+                dados_detalhados = pd.DataFrame([[7.0, 7.0, 7.0, 7.0, 7.0, v_ian, v_ida, v_ieg, v_iaa, v_ips, 0.5, 0.2]], columns=features_detalhadas)
                 
                 try:
-                    prob = modelo.predict_proba(entrada)[0][1] * 100
-                    st.divider()
-                    if prob >= 60: st.error(f"🚨 ALTO RISCO DETECTADO: {prob:.1f}%")
-                    elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
-                    else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
-                except Exception as e:
-                    st.error(f"Erro técnico na predição: {e}")
+                    # Tenta primeiro o que o erro da Web sugeriu
+                    prob = modelo.predict_proba(dados_simples)[0][1] * 100
+                except:
+                    try:
+                        # Se falhar, tenta o formato longo
+                        prob = modelo.predict_proba(dados_detalhados)[0][1] * 100
+                    except Exception as e:
+                        st.error(f"Erro de compatibilidade do modelo: {e}")
+                        st.stop()
+                
+                st.divider()
+                if prob >= 60: st.error(f"🚨 ALTO RISCO: {prob:.1f}%")
+                elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
+                else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
     else:
-        st.error("Arquivo 'modelo_passos_magicos.pkl' não encontrado na raiz.")
+        st.error("Modelo .pkl não localizado.")
         
 with aba_ins:
     st.subheader("💡 Insights e Ação")
