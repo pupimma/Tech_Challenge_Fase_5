@@ -120,6 +120,50 @@ with aba_dash:
             legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5) # Legenda horizontal para não espremer o gráfico
         )
         st.plotly_chart(fig_bar, use_container_width=True)
+
+with aba_ia:
+    st.subheader("🤖 IA Preditiva (Random Forest)")
+    path_model = os.path.join(os.path.dirname(__file__), 'modelo_passos_magicos.pkl')
+    
+    if os.path.exists(path_model):
+        modelo = joblib.load(path_model)
+        with st.expander("Configurar Simulador", expanded=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                v_ian = st.slider("Adequação (IAN)", 0.0, 10.0, 7.0)
+                v_ida = st.slider("Acadêmico (IDA)", 0.0, 10.0, 7.0)
+                v_ieg = st.slider("Engajamento (IEG)", 0.0, 10.0, 7.0)
+            with col2:
+                v_iaa = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 7.0)
+                v_ips = st.slider("Social (IPS)", 0.0, 10.0, 7.0)
+                v_ipp = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 7.0)
+            
+            if st.button("Executar Diagnóstico IA", use_container_width=True):
+                # TENTATIVA 1: NOMES SIMPLES (O QUE O ERRO DA WEB PEDIU)
+                features_simples = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
+                dados_simples = pd.DataFrame([[v_ian, v_ida, v_ieg, v_iaa, v_ips, v_ipp]], columns=features_simples)
+                
+                # TENTATIVA 2: NOMES DETALHADOS (CASO O MODELO LOCAL SEJA DIFERENTE)
+                features_detalhadas = ['INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23', 'Evol_INDE_22_23', 'Evol_IDA_22_23']
+                dados_detalhados = pd.DataFrame([[7.0, 7.0, 7.0, 7.0, 7.0, v_ian, v_ida, v_ieg, v_iaa, v_ips, 0.5, 0.2]], columns=features_detalhadas)
+                
+                try:
+                    # Tenta primeiro o que o erro da Web sugeriu
+                    prob = modelo.predict_proba(dados_simples)[0][1] * 100
+                except:
+                    try:
+                        # Se falhar, tenta o formato longo
+                        prob = modelo.predict_proba(dados_detalhados)[0][1] * 100
+                    except Exception as e:
+                        st.error(f"Erro de compatibilidade do modelo: {e}")
+                        st.stop()
+                
+                st.divider()
+                if prob >= 60: st.error(f"🚨 ALTO RISCO: {prob:.1f}%")
+                elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
+                else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
+    else:
+        st.error("Modelo .pkl não localizado.")
         
 with aba_ins:
     st.subheader("💡 Insights e Ação")
