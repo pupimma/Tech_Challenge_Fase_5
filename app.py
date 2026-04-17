@@ -101,30 +101,28 @@ with aba_ia:
         with st.expander("Configurar Simulador", expanded=True):
             col1, col2 = st.columns(2)
             with col1:
-                i23_inde = st.slider("INDE 23", 0.0, 10.0, 7.0)
-                i23_ida = st.slider("IDA 23", 0.0, 10.0, 7.0)
-                i23_ieg = st.slider("IEG 23", 0.0, 10.0, 7.0)
-                i23_iaa = st.slider("IAA 23", 0.0, 10.0, 7.0)
-                i23_ips = st.slider("IPS 23", 0.0, 10.0, 7.0)
+                v_ian = st.slider("Adequação (IAN)", 0.0, 10.0, 7.0)
+                v_ida = st.slider("Acadêmico (IDA)", 0.0, 10.0, 7.0)
+                v_ieg = st.slider("Engajamento (IEG)", 0.0, 10.0, 7.0)
             with col2:
-                d_inde = st.number_input("Delta INDE (22-23)", -5.0, 5.0, 0.5)
-                d_ida = st.number_input("Delta IDA (22-23)", -5.0, 5.0, 0.2)
+                v_iaa = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 7.0)
+                v_ips = st.slider("Social (IPS)", 0.0, 10.0, 7.0)
+                v_ipp = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 7.0)
             
-            if st.button("Calcular Diagnóstico IA", use_container_width=True):
-                # CRIANDO EXATAMENTE AS COLUNAS DO MODELO
-                features = ['INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 
-                            'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23',
-                            'Evol_INDE_22_23', 'Evol_IDA_22_23']
-                # Valores fixos de 2022 para simulação + inputs de 2023
-                valores = [[7.0, 7.0, 7.0, 7.0, 7.0, i23_inde, i23_ida, i23_ieg, i23_iaa, i23_ips, d_inde, d_ida]]
+            if st.button("Executar Diagnóstico IA", use_container_width=True):
+                # AJUSTE CRÍTICO: Enviando apenas as 6 colunas que o modelo 'viu' no treino
+                features = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
+                valores = [[v_ian, v_ida, v_ieg, v_iaa, v_ips, v_ipp]]
                 entrada = pd.DataFrame(valores, columns=features)
                 
                 try:
                     prob = modelo.predict_proba(entrada)[0][1] * 100
+                    st.divider()
                     if prob >= 60: st.error(f"🚨 ALTO RISCO: {prob:.1f}%")
                     elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
                     else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
                 except Exception as e:
+                    # Se ainda der erro de nome, o scikit-learn listará os nomes esperados aqui
                     st.error(f"Erro na predição: {e}")
     else:
         st.warning("Modelo .pkl não localizado na raiz.")
