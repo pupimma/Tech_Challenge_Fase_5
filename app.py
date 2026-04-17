@@ -93,40 +93,48 @@ with aba_dash:
                                x='Ano_Ref', y='Total', color='Pedra', barmode='group'), use_container_width=True)
 
 with aba_ia:
-    st.subheader("🤖 IA Preditiva")
+    st.subheader("🤖 IA Preditiva (Random Forest)")
     path_model = os.path.join(os.path.dirname(__file__), 'modelo_passos_magicos.pkl')
     
     if os.path.exists(path_model):
         modelo = joblib.load(path_model)
-        with st.expander("Configurar Simulador", expanded=True):
+        with st.expander("Configurar Parâmetros de Simulação", expanded=True):
             col1, col2 = st.columns(2)
             with col1:
-                v_ian = st.slider("Adequação (IAN)", 0.0, 10.0, 7.0)
-                v_ida = st.slider("Acadêmico (IDA)", 0.0, 10.0, 7.0)
-                v_ieg = st.slider("Engajamento (IEG)", 0.0, 10.0, 7.0)
+                st.markdown("**Valores Recentes (Safra 2023)**")
+                v23_inde = st.slider("INDE 23", 0.0, 10.0, 7.5)
+                v23_ida = st.slider("IDA 23", 0.0, 10.0, 7.0)
+                v23_ieg = st.slider("IEG 23", 0.0, 10.0, 8.0)
+                v23_iaa = st.slider("IAA 23", 0.0, 10.0, 7.5)
+                v23_ips = st.slider("IPS 23", 0.0, 10.0, 7.5)
             with col2:
-                v_iaa = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 7.0)
-                v_ips = st.slider("Social (IPS)", 0.0, 10.0, 7.0)
-                v_ipp = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 7.0)
+                st.markdown("**Métricas de Evolução**")
+                e_inde = st.number_input("Evol_INDE_22_23", -5.0, 5.0, 0.5)
+                e_ida = st.number_input("Evol_IDA_22_23", -5.0, 5.0, 0.2)
             
             if st.button("Executar Diagnóstico IA", use_container_width=True):
-                # AJUSTE CRÍTICO: Enviando apenas as 6 colunas que o modelo 'viu' no treino
-                features = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
-                valores = [[v_ian, v_ida, v_ieg, v_iaa, v_ips, v_ipp]]
+                # ORDEM E NOMES EXATOS EXIGIDOS PELO SEU MODELO:
+                features = [
+                    'INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 
+                    'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23',
+                    'Evol_INDE_22_23', 'Evol_IDA_22_23'
+                ]
+                
+                # Preenchemos 2022 com valores base e 2023/Evolução com seus inputs
+                valores = [[7.0, 7.0, 7.0, 7.0, 7.0, v23_inde, v23_ida, v23_ieg, v23_iaa, v23_ips, e_inde, e_ida]]
                 entrada = pd.DataFrame(valores, columns=features)
                 
                 try:
                     prob = modelo.predict_proba(entrada)[0][1] * 100
                     st.divider()
-                    if prob >= 60: st.error(f"🚨 ALTO RISCO: {prob:.1f}%")
+                    if prob >= 60: st.error(f"🚨 ALTO RISCO DETECTADO: {prob:.1f}%")
                     elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
                     else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
                 except Exception as e:
-                    # Se ainda der erro de nome, o scikit-learn listará os nomes esperados aqui
-                    st.error(f"Erro na predição: {e}")
+                    st.error(f"Erro técnico na predição: {e}")
     else:
-        st.warning("Modelo .pkl não localizado na raiz.")
-
+        st.error("Arquivo 'modelo_passos_magicos.pkl' não encontrado na raiz.")
+        
 with aba_ins:
     st.subheader("💡 Insights e Ação")
     m22 = df_master[df_master['Ano_Ref'] == 2022]['INDE'].mean()
