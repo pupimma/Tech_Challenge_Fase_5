@@ -78,63 +78,48 @@ with aba_cons:
     st.dataframe(df_filtrado, use_container_width=True)
 
 with aba_dash:
+    st.subheader("Indicadores Críticos de Gestão")
     k1, k2, k3 = st.columns(3)
-    k1.metric("Total Alunos", len(df_filtrado))
-    k2.metric("Média INDE", f"{df_filtrado['INDE'].mean():.2f}")
+    k1.metric("Volume de Alunos", len(df_filtrado))
+    k2.metric("Média INDE Geral", f"{df_filtrado['INDE'].mean():.2f}")
     risco_24 = len(df_filtrado[(df_filtrado['Ano_Ref'] == 2024) & (df_filtrado['IAN'] < 10)])
-    k3.metric("Risco IAN (2024)", risco_24, delta_color="inverse")
+    k3.metric("Alerta de Risco (IAN)", risco_24, delta="Atenção Prioritária", delta_color="inverse")
     
-    c1, c2 = st.columns(2)
-    with c1:
-        st.plotly_chart(px.line(df_filtrado.groupby('Ano_Ref')['INDE'].mean().reset_index(), 
-                                x='Ano_Ref', y='INDE', title="Evolução INDE", markers=True), use_container_width=True)
-    with c2:
-        st.plotly_chart(px.bar(df_filtrado.groupby(['Ano_Ref', 'Pedra']).size().reset_index(name='Total'), 
-                               x='Ano_Ref', y='Total', color='Pedra', barmode='group'), use_container_width=True)
+    st.divider()
 
-with aba_ia:
-    st.subheader("🤖 IA Preditiva (Random Forest)")
-    path_model = os.path.join(os.path.dirname(__file__), 'modelo_passos_magicos.pkl')
-    
-    if os.path.exists(path_model):
-        modelo = joblib.load(path_model)
-        with st.expander("Configurar Simulador", expanded=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                v_ian = st.slider("Adequação (IAN)", 0.0, 10.0, 7.0)
-                v_ida = st.slider("Acadêmico (IDA)", 0.0, 10.0, 7.0)
-                v_ieg = st.slider("Engajamento (IEG)", 0.0, 10.0, 7.0)
-            with col2:
-                v_iaa = st.slider("Autoavaliação (IAA)", 0.0, 10.0, 7.0)
-                v_ips = st.slider("Social (IPS)", 0.0, 10.0, 7.0)
-                v_ipp = st.slider("Psicopedagógico (IPP)", 0.0, 10.0, 7.0)
-            
-            if st.button("Executar Diagnóstico IA", use_container_width=True):
-                # TENTATIVA 1: NOMES SIMPLES (O QUE O ERRO DA WEB PEDIU)
-                features_simples = ['IAN', 'IDA', 'IEG', 'IAA', 'IPS', 'IPP']
-                dados_simples = pd.DataFrame([[v_ian, v_ida, v_ieg, v_iaa, v_ips, v_ipp]], columns=features_simples)
-                
-                # TENTATIVA 2: NOMES DETALHADOS (CASO O MODELO LOCAL SEJA DIFERENTE)
-                features_detalhadas = ['INDE_22', 'IDA_22', 'IEG_22', 'IAA_22', 'IPS_22', 'INDE_23', 'IDA_23', 'IEG_23', 'IAA_23', 'IPS_23', 'Evol_INDE_22_23', 'Evol_IDA_22_23']
-                dados_detalhados = pd.DataFrame([[7.0, 7.0, 7.0, 7.0, 7.0, v_ian, v_ida, v_ieg, v_iaa, v_ips, 0.5, 0.2]], columns=features_detalhadas)
-                
-                try:
-                    # Tenta primeiro o que o erro da Web sugeriu
-                    prob = modelo.predict_proba(dados_simples)[0][1] * 100
-                except:
-                    try:
-                        # Se falhar, tenta o formato longo
-                        prob = modelo.predict_proba(dados_detalhados)[0][1] * 100
-                    except Exception as e:
-                        st.error(f"Erro de compatibilidade do modelo: {e}")
-                        st.stop()
-                
-                st.divider()
-                if prob >= 60: st.error(f"🚨 ALTO RISCO: {prob:.1f}%")
-                elif prob >= 30: st.warning(f"⚠️ RISCO MODERADO: {prob:.1f}%")
-                else: st.success(f"✅ BAIXO RISCO: {prob:.1f}%")
-    else:
-        st.error("Modelo .pkl não localizado.")
+    # Layout de colunas para os gráficos
+    c1, c2 = st.columns(2)
+
+    with c1:
+        # Gráfico de Linha - Evolução INDE
+        df_inde = df_filtrado.groupby('Ano_Ref')['INDE'].mean().reset_index()
+        fig_line = px.line(
+            df_inde, x='Ano_Ref', y='INDE', markers=True,
+            title="Tendência de Desempenho (Média INDE)",
+            labels={'Ano_Ref': 'Ano', 'INDE': 'Média INDE'}
+        )
+        fig_line.update_layout(
+            xaxis_type='category', 
+            margin=dict(l=20, r=20, t=50, b=20),
+            height=400 # Altura fixa para manter simetria
+        )
+        st.plotly_chart(fig_line, use_container_width=True)
+
+    with c2:
+        # Gráfico de Barras - Distribuição Pedras
+        df_p = df_filtrado.groupby(['Ano_Ref', 'Pedra']).size().reset_index(name='Total')
+        fig_bar = px.bar(
+            df_p, x='Ano_Ref', y='Total', color='Pedra', barmode='group',
+            title="Distribuição de Alunos por Pedra",
+            labels={'Ano_Ref': 'Ano', 'Total': 'Qtd Alunos', 'Pedra': 'Classificação'}
+        )
+        fig_bar.update_layout(
+            xaxis_type='category',
+            margin=dict(l=20, r=20, t=50, b=20),
+            height=400, # Mesma altura do gráfico de linha
+            legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5) # Legenda horizontal para não espremer o gráfico
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
         
 with aba_ins:
     st.subheader("💡 Insights e Ação")
