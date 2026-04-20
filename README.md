@@ -57,6 +57,23 @@ Desenvolvemos um classificador baseado no algoritmo **Random Forest** (Florestas
 
 ---
 
+## 🧠 Ciclo de Vida do Modelo (ML)
+
+O modelo preditivo não é uma caixa preta; ele pode ser reproduzido ou atualizado seguindo os passos abaixo:
+
+Notebook de Treinamento: Localizado em /notebooks/treinamento_modelo.ipynb.
+
+Dados: O script consome a base oficial da ONG em /data.
+
+Geração do Artefato: Ao executar o notebook, o algoritmo Random Forest processa as variáveis e exporta o arquivo modelo_passos_magicos.pkl para a pasta /models.
+
+Consumo: O arquivo app.py carrega este binário automaticamente para realizar as predições em tempo real no Dashboard.
+
+Nota: Caso deseje retreinar o modelo com novos dados, certifique-se de manter a estrutura de colunas (IAN, IDA, IEG, IAA, IPS, IPP) para garantir a compatibilidade com a interface.
+
+---
+
+
 💻 Como rodar localmente
 1. Clone o repositório:
 ```bash
