@@ -65,7 +65,7 @@ with st.sidebar:
     pedra_sel = st.multiselect("Classificação (Pedra):", options=opcoes_pedra)
     df_filtrado = df_f[df_f['Pedra'].astype(str).isin(pedra_sel)] if pedra_sel else df_f
 
-st.divider()
+    st.divider()
     st.caption("🚀 **Datathon Fase 5** | Mauro Pupim")
     st.info("💡 **Nota técnica:** Ferramentas de IA foram utilizadas para otimização da arquitetura e suporte ao código.")
 
