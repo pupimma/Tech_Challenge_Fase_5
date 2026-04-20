@@ -66,6 +66,18 @@ with st.sidebar:
     df_filtrado = df_f[df_f['Pedra'].astype(str).isin(pedra_sel)] if pedra_sel else df_f
 
     st.divider()
+    # Bloco de Exportação de Dados
+    st.subheader("📥 Exportação")
+    csv = df_filtrado.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Baixar Dados Filtrados (CSV)",
+        data=csv,
+        file_name='analise_passos_magicos.csv',
+        mime='text/csv',
+        use_container_width=True
+    )
+    
+    st.divider()
     st.caption("🚀 **Datathon Fase 5** | Mauro Pupim")
     st.info("💡 **Nota técnica:** Ferramentas de IA foram utilizadas para otimização da arquitetura e suporte ao código.")
 
